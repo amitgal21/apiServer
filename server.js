@@ -28,26 +28,33 @@ app.post('/api/openai', async (req, res) => {
 
   try {
     const response = await axios.post(
-      'https://api.openai.com/v1/completions',
-      {
-        model: 'text-davinci-003', // מודל OpenAI
-        prompt: prompt,
-        max_tokens: max_tokens || 100, // ברירת מחדל ל-100 טוקנים
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`, // מפתח ה-API בכותרת הבקשה
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant.' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: max_tokens || 100,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+        }
+      );
+      
 
     console.log('OpenAI Response:', response.data); // לוג לתגובה מ-OpenAI
     res.json(response.data);
   } catch (error) {
-    console.error('Error communicating with OpenAI:', error.message); // לוג שגיאה
-    res.status(error.response?.status || 500).json({
-      error: error.message,
-    });
+    console.error('Error communicating with OpenAI:', error.message);
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
