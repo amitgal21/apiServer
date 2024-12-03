@@ -1,17 +1,16 @@
 const express = require('express');
 const axios = require('axios');
-require('dotenv').config(); // טוען משתני סביבה מקובץ .env
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000; // פורט דינמי עבור Render או 3000 לפיתוח מקומי
+const PORT = process.env.PORT || 3000; 
 
-// Middleware לקריאת JSON בבקשות
+
 app.use(express.json());
 
-// רוט לשליחת קריאה ל-OpenAI
 app.post('/api/openai', async (req, res) => {
-  console.log('Request received:', req.body); // לוג לתיעוד הבקשה
-  console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY); // לוג למפתח ה-API
+  console.log('Request received:', req.body); 
+  console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY); 
 
   const { prompt, max_tokens } = req.body;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -45,7 +44,7 @@ app.post('/api/openai', async (req, res) => {
       );
       
 
-    console.log('OpenAI Response:', response.data); // לוג לתגובה מ-OpenAI
+    console.log('OpenAI Response:', response.data);
     res.json(response.data);
   } catch (error) {
     console.error('Error communicating with OpenAI:', error.message);
@@ -58,7 +57,43 @@ app.post('/api/openai', async (req, res) => {
   }
 });
 
-// הפעלת השרת
+
+app.post('/api/send-email', async (req, res) => {
+  const { to, subject, text } = req.body;
+
+  if (!to || !subject || !text) {
+    return res.status(400).json({ error: 'Missing required fields: to, subject, text' });
+  }
+
+  try {
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', 
+      auth: {
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS, 
+      },
+    });
+
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      subject,
+      text,
+    };
+
+    
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    res.json({ message: 'Email sent successfully', info });
+  } catch (error) {
+    console.error('Error sending email:', error.message);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
