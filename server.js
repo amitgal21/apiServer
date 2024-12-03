@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
 const app = express();
@@ -65,25 +65,19 @@ app.post('/api/send-email', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields: to, subject, text' });
   }
 
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+  const msg = {
+    to,
+    from: process.env.EMAIL_USER,
+    subject,
+    text,
+  };
+
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to,
-      subject,
-      text,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
-    res.json({ message: 'Email sent successfully', info });
+    await sgMail.send(msg);
+    console.log('Email sent successfully');
+    res.json({ message: 'Email sent successfully' });
   } catch (error) {
     console.error('Error sending email:', error.message);
     res.status(500).json({ error: 'Failed to send email' });
