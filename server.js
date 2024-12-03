@@ -1,16 +1,17 @@
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 3000;
 
-
+app.use(cors());
 app.use(express.json());
 
 app.post('/api/openai', async (req, res) => {
-  console.log('Request received:', req.body); 
-  console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY); 
+  console.log('Request received:', req.body);
+  console.log('OPENAI_API_KEY:', process.env.OPENAI_API_KEY);
 
   const { prompt, max_tokens } = req.body;
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -27,22 +28,21 @@ app.post('/api/openai', async (req, res) => {
 
   try {
     const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4',
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant.' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: max_tokens || 100,
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: max_tokens || 100,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-        }
-      );
-      
+      }
+    );
 
     console.log('OpenAI Response:', response.data);
     res.json(response.data);
@@ -57,7 +57,6 @@ app.post('/api/openai', async (req, res) => {
   }
 });
 
-
 app.post('/api/send-email', async (req, res) => {
   const { to, subject, text } = req.body;
 
@@ -66,16 +65,14 @@ app.post('/api/send-email', async (req, res) => {
   }
 
   try {
-    
     const transporter = nodemailer.createTransport({
-      service: 'gmail', 
+      service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS, 
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
-    
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to,
@@ -83,7 +80,6 @@ app.post('/api/send-email', async (req, res) => {
       text,
     };
 
-    
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent:', info.response);
     res.json({ message: 'Email sent successfully', info });
@@ -92,7 +88,6 @@ app.post('/api/send-email', async (req, res) => {
     res.status(500).json({ error: 'Failed to send email' });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
