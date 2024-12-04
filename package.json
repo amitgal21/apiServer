@@ -17,6 +17,7 @@
     "express": "^4.21.1",
     "mailgun-js": "^0.22.0",
     "mailgun.js": "github:mailgun/mailgun-js",
+    "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.16"
   }
 }
