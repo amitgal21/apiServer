@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const mailgun = require('mailgun-js');
 require('dotenv').config();
 
 const app = express();
@@ -58,39 +57,7 @@ app.post('/api/openai', async (req, res) => {
   }
 });
 
-const mg = mailgun({
-  apiKey: process.env.MAILGUN_API_KEY,
-  domain: process.env.MAILGUN_DOMAIN,
-});
 
-// נתיב לשליחת מייל
-app.post('/api/send-email', async (req, res) => {
-  const { to, subject, text } = req.body;
-
-  if (!to || !subject || !text) {
-    return res.status(400).json({ error: 'Missing required fields: to, subject, text' });
-  }
-
-  const data = {
-    from: `Your App <${process.env.MAILGUN_SENDER}>`,
-    to,
-    subject,
-    text,
-  };
-
-  try {
-    const body = await mg.messages().send(data);
-    console.log('Email sent successfully:', body);
-    res.json({ message: 'Email sent successfully', body });
-  } catch (error) {
-    console.error('Error sending email:', error.message);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
 
 app.listen(PORT, () => {
