@@ -3,6 +3,7 @@ import numpy as np
 import colorsys
 from collections import Counter
 import sys
+import json
 
 # צבעים ידועים של הקובייה (RGB)
 color_refs = {
@@ -102,14 +103,17 @@ def detect_cube_colors(image_path):
 image_paths = sys.argv[1:]
 
 if not image_paths:
-    print("No image paths provided. Exiting.")
+    print(json.dumps({"error": "No image paths provided."}))
     sys.exit(1)
+
+results = {}
 
 for i, image_path in enumerate(image_paths, 1):
     try:
-        print(f"Processing Image {i}: {image_path}")
         cube_colors = detect_cube_colors(image_path)
-        print(f"Colors for Image {i}: {cube_colors}")
-        print("-" * 30)
+        results[f"Image {i}"] = cube_colors
     except FileNotFoundError:
-        print(f"File not found: {image_path}")
+        results[f"Image {i}"] = {"error": f"File not found: {image_path}"}
+
+# פלט JSON בלבד
+print(json.dumps(results))
