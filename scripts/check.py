@@ -2,7 +2,9 @@ from PIL import Image, ImageEnhance
 import numpy as np
 import colorsys
 from collections import Counter
+import sys
 
+# צבעים ידועים של הקובייה (RGB)
 color_refs = {
     "orange": (232, 112, 0),
     "red": (220, 66, 47),
@@ -14,13 +16,14 @@ color_refs = {
 
 
 def rgb_to_hsv(rgb):
+    """המרת RGB ל-HSV"""
     r, g, b = [x / 255.0 for x in rgb]
     h, s, v = colorsys.rgb_to_hsv(r, g, b)
     return h * 360, s * 255, v * 255
 
 
 def preprocess_image(image):
-
+    """עיבוד מוקדם של התמונה"""
     contrast_enhancer = ImageEnhance.Contrast(image)
     image = contrast_enhancer.enhance(1.5)
 
@@ -31,13 +34,14 @@ def preprocess_image(image):
 
 
 def calculate_dominant_color(sub_image):
+    """חישוב הצבע הדומיננטי בריבוע"""
     flat_pixels = sub_image.reshape(-1, 3)
     most_common_color = Counter(map(tuple, flat_pixels)).most_common(1)[0][0]
     return np.array(most_common_color)
 
 
 def classify_color(rgb_value):
-
+    """מזהה צבע לפי מרחק RGB והמרת HSV"""
     value_hsv = rgb_to_hsv(rgb_value)
 
     hue = value_hsv[0]
@@ -66,6 +70,7 @@ def classify_color(rgb_value):
 
 
 def detect_cube_colors(image_path):
+    """זיהוי צבעים בתמונה"""
     image = Image.open(image_path).convert("RGB")
     image = preprocess_image(image)
     image_array = np.array(image)
@@ -93,10 +98,18 @@ def detect_cube_colors(image_path):
     return colors
 
 
-image_paths = ["./pic1.jpg", "./pic2.jpg", "./pic3.jpg"]
+# קבלת נתיבי תמונות מהארגומנטים של שורת הפקודה
+image_paths = sys.argv[1:]
+
+if not image_paths:
+    print("No image paths provided. Exiting.")
+    sys.exit(1)
 
 for i, image_path in enumerate(image_paths, 1):
-    print(f"Results for Image {i}: {image_path}")
-    cube_colors = detect_cube_colors(image_path)
-    print(cube_colors)
-    print("-" * 30)
+    try:
+        print(f"Processing Image {i}: {image_path}")
+        cube_colors = detect_cube_colors(image_path)
+        print(f"Colors for Image {i}: {cube_colors}")
+        print("-" * 30)
+    except FileNotFoundError:
+        print(f"File not found: {image_path}")
