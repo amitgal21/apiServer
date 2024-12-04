@@ -66,40 +66,55 @@ app.post('/api/openai', async (req, res) => {
 });
 
 
-app.post('/api/detect-colors', upload.fields([{ name: 'image1' }, { name: 'image2' }, { name: 'image3' }]), (req, res) => {
-  const { files } = req;
-  if (!files.image1 || !files.image2 || !files.image3) {
-    return res.status(400).json({ error: 'Please upload 3 images.' });
-  }
+app.post(
+  '/api/detect-colors',
+  upload.fields([{ name: 'image1' }, { name: 'image2' }, { name: 'image3' }]),
+  (req, res) => {
+    const { files } = req;
+    console.log('Uploaded files:', files);
 
-  const imagePaths = [files.image1[0].path, files.image2[0].path, files.image3[0].path];
-
-  const python = spawn('python3', ['scripts/check.py', ...imagePaths]);
-
-  let pythonOutput = '';
-  python.stdout.on('data', (data) => {
-    pythonOutput += data.toString();
-  });
-
-  python.stderr.on('data', (data) => {
-    console.error('Python error:', data.toString());
-  });
-
-  python.on('close', (code) => {
-    imagePaths.forEach((filePath) => fs.unlinkSync(filePath));
-
-    if (code === 0) {
-      try {
-        const result = JSON.parse(pythonOutput);
-        res.json(result);
-      } catch (error) {
-        res.status(500).json({ error: 'Invalid JSON from Python script.' });
-      }
-    } else {
-      res.status(500).json({ error: 'Python script failed.' });
+    if (!files.image1 || !files.image2 || !files.image3) {
+      return res.status(400).json({ error: 'Please upload 3 images.' });
     }
-  });
-});
+
+    const imagePaths = [files.image1[0].path, files.image2[0].path, files.image3[0].path];
+    console.log('Image paths:', imagePaths);
+
+    const python = spawn('python3', ['scripts/check.py', ...imagePaths]);
+
+    let pythonOutput = '';
+    python.stdout.on('data', (data) => {
+      console.log('Python output:', data.toString());
+      pythonOutput += data.toString();
+    });
+
+    python.stderr.on('data', (data) => {
+      console.error('Python error:', data.toString());
+    });
+
+    python.on('close', (code) => {
+      console.log('Python script exited with code:', code);
+
+      // מחיקת הקבצים לאחר שימוש
+      imagePaths.forEach((filePath) => {
+        console.log('Deleting file:', filePath);
+        fs.unlinkSync(filePath);
+      });
+
+      if (code === 0) {
+        try {
+          const result = JSON.parse(pythonOutput);
+          res.json(result);
+        } catch (error) {
+          console.error('JSON parse error:', error);
+          res.status(500).json({ error: 'Invalid JSON from Python script.' });
+        }
+      } else {
+        res.status(500).json({ error: 'Python script failed.' });
+      }
+    });
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
